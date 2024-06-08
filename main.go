@@ -26,7 +26,7 @@ func main() {
 	mysqlRepo := db.NewMySQLRepository(mysqlDB)
 	pgRepo := db.NewPostgresRepository(pgPool)
 
-	migrationService := services.NewMigrationService(mysqlRepo, pgRepo)
+	migrationService := services.NewMigrationService(mysqlRepo, pgRepo, cfg.Concurrency)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
