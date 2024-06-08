@@ -1,12 +1,13 @@
 package config
 
 import (
+	"context"
 	"database/sql"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type TableConfig struct {
@@ -17,6 +18,7 @@ type TableConfig struct {
 type Config struct {
 	MySQLDSN    string        `yaml:"mysql_dsn"`
 	PostgresDSN string        `yaml:"postgres_dsn"`
+	Concurrency int           `yaml:"concurrency"`
 	Tables      []TableConfig `yaml:"tables"`
 }
 
@@ -42,7 +44,7 @@ func NewDBConnections(cfg *Config) (*sql.DB, *pgxpool.Pool, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	pgPool, err := pgxpool.ConnectConfig(nil, pgConfig)
+	pgPool, err := pgxpool.NewWithConfig(context.Background(), pgConfig)
 	if err != nil {
 		return nil, nil, err
 	}

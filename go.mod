@@ -1,12 +1,12 @@
-module github.com/TFMMV/mysql_to_postgres
+module github.com/TFMV/mysql_to_postgres
 
 go 1.22.3
 
 require (
-	github.com/apache/arrow/go/v8 v8.0.1
+	github.com/apache/arrow/go/v9 v9.0.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -21,7 +21,6 @@ require (
 	github.com/klauspost/asmfmt v1.3.1 // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect

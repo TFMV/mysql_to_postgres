@@ -4,23 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"sync"
 
-	"mysql_to_postgres/config"
-	"mysql_to_postgres/db"
+	"github.com/TFMV/mysql_to_postgres/config"
+	"github.com/TFMV/mysql_to_postgres/db"
 
-	"github.com/apache/arrow/go/v8/arrow/array"
-	"github.com/apache/arrow/go/v8/arrow/memory"
+	"github.com/apache/arrow/go/v9/arrow/array"
+	"github.com/apache/arrow/go/v9/arrow/memory"
 )
 
 type MigrationService struct {
 	MySQLRepo    *db.MySQLRepository
 	PostgresRepo *db.PostgresRepository
+	Concurrency  int
 }
 
-func NewMigrationService(mysqlRepo *db.MySQLRepository, pgRepo *db.PostgresRepository) *MigrationService {
+func NewMigrationService(mysqlRepo *db.MySQLRepository, pgRepo *db.PostgresRepository, concurrency int) *MigrationService {
 	return &MigrationService{
 		MySQLRepo:    mysqlRepo,
 		PostgresRepo: pgRepo,
+		Concurrency:  concurrency,
 	}
 }
 
@@ -48,7 +51,24 @@ func (s *MigrationService) Migrate(ctx context.Context, tableConfig config.Table
 		scanArgs[i] = &values[i]
 	}
 
-	var data [][]interface{}
+	var wg sync.WaitGroup
+	dataCh := make(chan []interface{}, s.Concurrency)
+
+	// Worker goroutines to process data
+	for i := 0; i < s.Concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for row := range dataCh {
+				var values []interface{}
+				for _, val := range row {
+					values = append(values, val)
+				}
+				s.PostgresRepo.InsertTableData(ctx, tableConfig.DestinationTable, cols, [][]interface{}{values})
+			}
+		}()
+	}
+
 	for rows.Next() {
 		err = rows.Scan(scanArgs...)
 		if err != nil {
@@ -60,9 +80,12 @@ func (s *MigrationService) Migrate(ctx context.Context, tableConfig config.Table
 			builders[i].(*array.StringBuilder).Append(string(val))
 			row = append(row, string(val))
 		}
-		data = append(data, row)
+		dataCh <- row
 	}
+	close(dataCh)
+
+	wg.Wait()
 
 	log.Printf("Migrating table '%s' to table '%s'", tableConfig.SourceTable, tableConfig.DestinationTable)
-	return s.PostgresRepo.InsertTableData(ctx, tableConfig.DestinationTable, cols, data)
+	return nil
 }

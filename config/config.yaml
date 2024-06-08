@@ -1,5 +1,6 @@
 mysql_dsn: "username:password@tcp(host:port)/database"
 postgres_dsn: "postgres://username:password@host:port/database"
+concurrency: 5
 tables:
   - source_table: "users"
     destination_table: "users"

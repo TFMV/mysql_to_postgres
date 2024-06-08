@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,7 +17,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 func (repo *PostgresRepository) InsertTableData(ctx context.Context, destinationTable string, columns []string, values [][]interface{}) error {
-	batch := &pgxpool.Batch{}
+	batch := &pgx.Batch{}
 	for _, row := range values {
 		placeholders := make([]string, len(row))
 		for i := range row {
@@ -27,8 +28,12 @@ func (repo *PostgresRepository) InsertTableData(ctx context.Context, destination
 	}
 
 	br := repo.Pool.SendBatch(ctx, batch)
-	if _, err := br.Exec(); err != nil {
+	defer br.Close()
+
+	_, err := br.Exec()
+	if err != nil {
 		return err
 	}
-	return br.Close()
+
+	return nil
 }
